@@ -12,7 +12,7 @@ import {
   Wand2,
   UserRound,
   Heart,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react";
 
 function Shell() {
@@ -101,19 +101,25 @@ function Shell() {
                 >
                   <UserRound className="h-4 w-4 text-white/65 group-hover:text-white/85" />
                   <span className="font-medium">{user.username}</span>
-                  <span className="ml-1 rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] text-white/70">
-                    VE {user.ventEnergy}
+                  <span className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] text-white/70">
+                    <img
+                      src="/VELogo.png"
+                      alt="VE"
+                      className="h-3.5 w-3.5 opacity-90"
+                    />
+                    <span className="font-semibold text-white/85">
+                      {user.ventEnergy}
+                    </span>
                   </span>
                 </Link>
 
-<Link
-  to="/store"
-  className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
->
-  <ShoppingBag className="h-4 w-4 text-white/65 group-hover:text-white/85" />
-  Store
-</Link>
-
+                <Link
+                  to="/store"
+                  className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+                >
+                  <ShoppingBag className="h-4 w-4 text-white/65 group-hover:text-white/85" />
+                  Store
+                </Link>
 
                 <button
                   onClick={logout}
