@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import RantCard from "../components/RantCard";
 import { X, ShoppingBag, Sparkles, CheckCircle2 } from "lucide-react";
 import { themeStyle, glowStyle, effectStyle } from "../lib/cosmetics";
+import ModalPortal from "../components/ui/ModalPortal";
 
 function slotForType(type) {
   if (type === "rantTheme") return "rantTheme";
@@ -407,7 +408,7 @@ export default function StorePage() {
         </div>
       )}
 
-      <Modal open={!!preview} onClose={() => setPreview(null)}>
+      <ModalPortal open={!!preview} onClose={() => setPreview(null)}>
         <div className="space-y-4">
           <div className="text-lg font-semibold">Preview</div>
           <div className="text-sm text-white/55">
@@ -460,7 +461,7 @@ export default function StorePage() {
             )}
           </div>
         </div>
-      </Modal>
+      </ModalPortal>
     </div>
   );
 }
