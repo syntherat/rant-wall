@@ -8,12 +8,15 @@ import User from "./models/User.js";
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id).select("username email ventEnergy cosmetic googleId");
+    const user = await User.findById(id).select(
+      "username email ventEnergy equipped inventory cosmetic googleId"
+    );
     done(null, user || false);
   } catch (e) {
     done(e);
   }
 });
+
 
 // Local strategy (email + password)
 passport.use(

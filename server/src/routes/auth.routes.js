@@ -25,7 +25,18 @@ router.post("/register", async (req, res) => {
     // Auto-login after register
     req.login(user, (err) => {
       if (err) return res.status(500).json({ error: "Login failed" });
-      res.json({ user: req.user });
+      res.json({
+  user: {
+    _id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    ventEnergy: req.user.ventEnergy,
+    equipped: req.user.equipped,
+    inventory: req.user.inventory,
+    cosmetic: req.user.cosmetic,
+  },
+});
+
     });
   } catch {
     res.status(500).json({ error: "Server error" });
@@ -40,7 +51,18 @@ router.post("/login", (req, res, next) => {
 
     req.login(user, (e) => {
       if (e) return next(e);
-      return res.json({ user: req.user });
+      return res.json({
+  user: {
+    _id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    ventEnergy: req.user.ventEnergy,
+    equipped: req.user.equipped,
+    inventory: req.user.inventory,
+    cosmetic: req.user.cosmetic,
+  },
+});
+
     });
   })(req, res, next);
 });
@@ -55,8 +77,22 @@ router.post("/logout", (req, res) => {
 });
 
 router.get("/session", (req, res) => {
-  res.json({ user: req.user || null });
+  if (!req.user) return res.json({ user: null });
+
+  const u = req.user;
+  res.json({
+    user: {
+      _id: u._id,
+      username: u.username,
+      email: u.email,
+      ventEnergy: u.ventEnergy,
+      equipped: u.equipped,      // ✅ REQUIRED
+      inventory: u.inventory,    // optional but useful
+      cosmetic: u.cosmetic,      // legacy
+    },
+  });
 });
+
 
 // Google OAuth start
 router.get(

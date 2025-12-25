@@ -54,7 +54,9 @@ export default function ProfilePage() {
   }, [loading, user, nav]);
 
   // quick derived stuff (safe fallbacks)
-  const theme = user?.cosmetic?.cardTheme || "midnight";
+  const equipped = user?.equipped || {};
+const theme = equipped.rantTheme || "theme.midnight";
+
   const badge = user?.cosmetic?.badge || "none";
   const ve = typeof user?.ventEnergy === "number" ? user.ventEnergy : 0;
 
@@ -124,33 +126,58 @@ export default function ProfilePage() {
 
         {/* extra sections */}
         <div className="mt-5 grid gap-3">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-white/60">
-              <Sparkles className="h-4 w-4 text-white/60" />
-              CUSTOMIZATION
-            </div>
-            <div className="mt-2 text-sm text-white/60">
-              Your profile is intentionally minimal. Cosmetics only affect how *you* experience the space.
-            </div>
+<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+  <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-white/60">
+      <Sparkles className="h-4 w-4 text-white/60" />
+      LOADOUT
+    </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                to="/customize"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-              >
-                <Sparkles className="h-4 w-4 text-white/70" />
-                Customize
-              </Link>
+    <Link
+      to="/store"
+      className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] hover:bg-white/10"
+    >
+      <Sparkles className="h-4 w-4 text-white/70" />
+      Open Store
+    </Link>
+  </div>
 
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-              >
-                <ArrowLeft className="h-4 w-4 text-white/70" />
-                Back to feed
-              </Link>
-            </div>
-          </div>
+  <div className="mt-3 grid gap-2">
+    {[
+      ["Rant Theme", equipped.rantTheme || "theme.midnight"],
+      ["Rant Effect", equipped.rantEffect || "effect.none"],
+      ["Name Glow", equipped.nameGlow || "glow.none"],
+      ["Profile Theme", equipped.profileTheme || "profile.midnight"],
+    ].map(([label, value]) => (
+      <div
+        key={label}
+        className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2"
+      >
+        <div className="text-xs text-white/55">{label}</div>
+        <div className="text-xs font-semibold text-white/85">{value}</div>
+      </div>
+    ))}
+  </div>
+
+  <div className="mt-4 flex flex-wrap gap-2">
+    <Link
+      to="/"
+      className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+    >
+      <ArrowLeft className="h-4 w-4 text-white/70" />
+      Back to feed
+    </Link>
+
+    <Link
+      to="/inventory"
+      className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+    >
+      <Shield className="h-4 w-4 text-white/70" />
+      Inventory
+    </Link>
+  </div>
+</div>
+
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-white/60">

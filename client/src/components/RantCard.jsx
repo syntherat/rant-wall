@@ -1,35 +1,11 @@
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactionTray from "./ui/ReactionTray.jsx";
 import EmojiBurst from "./ui/EmojiBurst.jsx";
 import useLongPress from "./ui/useLongPress.js";
 import { MessageCircle, ArrowUpRight } from "lucide-react";
-
-function hashStr(s = "") {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function pick(arr, n) {
-  return arr[n % arr.length];
-}
-
-function messyFor(id) {
-  const h = hashStr(id);
-
-  const rot = ((h % 1100) / 1100) * 10 - 5; // -5..+5
-  const ox = (((h >>> 8) % 2000) / 2000) * 18 - 9;
-  const oy = (((h >>> 16) % 2000) / 2000) * 18 - 9;
-
-  const widths = ["w-[96%]", "w-[92%]", "w-[88%]", "w-[84%]"];
-  const align = (h >>> 20) % 2 === 0 ? "" : "ml-auto";
-
-  return { rot, ox, oy, widthClass: pick(widths, h), alignClass: align };
-}
+import { themeStyle, glowStyle, effectStyle } from "../lib/cosmetics";
 
 function initials(name = "Anon") {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -39,29 +15,22 @@ function initials(name = "Anon") {
 export default function RantCard({
   rant,
   onReact,
-  theme = "midnight",
-  mode = "wall", // ✅ "wall" (messy) | "thread" (straight)
+  theme = "theme.midnight",
+  effect = "effect.none",
+  nameGlow = "glow.none",
 }) {
   const nav = useNavigate();
 
   const counts = rant.reactions || {};
   const author = rant.authorMode === "public" ? rant.authorName : rant.anonAlias;
 
-  // Messy only in wall mode
-  const messy = useMemo(() => messyFor(rant._id), [rant._id]);
+  // Cosmetics registry
+  const t = themeStyle(theme);
+  const g = glowStyle(nameGlow);
+  const e = effectStyle(effect);
 
-  const rot = mode === "thread" ? 0 : messy.rot;
-  const ox = mode === "thread" ? 0 : messy.ox;
-  const oy = mode === "thread" ? 0 : messy.oy;
-  const widthClass = mode === "thread" ? "w-full" : messy.widthClass;
-  const alignClass = mode === "thread" ? "" : messy.alignClass;
-
-  const themeGlow =
-    theme === "ember"
-      ? "from-rose-500/25 via-orange-400/10 to-transparent"
-      : theme === "aurora"
-      ? "from-cyan-400/20 via-fuchsia-500/12 to-transparent"
-      : "from-indigo-500/18 via-fuchsia-500/10 to-transparent";
+  // Glow only for public usernames
+  const showGlow = rant.authorMode === "public" && nameGlow && nameGlow !== "glow.none";
 
   // IG reaction system
   const [trayOpen, setTrayOpen] = useState(false);
@@ -73,7 +42,6 @@ export default function RantCard({
   const [burst, setBurst] = useState(null);
   const reactBtnRef = useRef(null);
 
-  // hover-intent timers (prevents flicker)
   const openT = useRef(null);
   const closeT = useRef(null);
 
@@ -149,59 +117,84 @@ export default function RantCard({
     await onReact?.(rant._id, r.key);
   }
 
-  async function quickReact(e) {
-    e?.stopPropagation();
+  async function quickReact(e2) {
+    e2?.stopPropagation();
     if (longPress.shouldCancelClick()) return;
     burstAtButton("🫂");
     await onReact?.(rant._id, "hug");
   }
 
-  const hoverRot = rot + (rot > 0 ? 0.6 : -0.6);
   const goThread = () => nav(`/rant/${rant._id}`);
 
   return (
     <>
-      {burst && (
-        <EmojiBurst emoji={burst.emoji} at={burst.at} onDone={() => setBurst(null)} />
-      )}
+      {burst && <EmojiBurst emoji={burst.emoji} at={burst.at} onDone={() => setBurst(null)} />}
 
       <motion.div
         layout
-        className={`relative inline-block ${widthClass} ${alignClass}`}
-        style={{
-          transform: `translate(${ox}px, ${oy}px) rotate(${rot}deg)`,
-          transformOrigin: "40% 30%",
-        }}
-        whileHover={
-          mode === "thread"
-            ? undefined
-            : { transform: `translate(${ox}px, ${oy - 2}px) rotate(${hoverRot}deg)` }
-        }
-        transition={{ type: "spring", stiffness: 240, damping: 18 }}
+        className="relative w-full"
+        whileHover={{ y: -2 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
       >
         <button
           type="button"
           onClick={goThread}
-          className="group relative w-full overflow-visible rounded-3xl border border-white/10 bg-white/[0.045] rw-card-shadow p-4 text-left"
+          className={[
+            "group relative w-full overflow-hidden rounded-3xl border p-4 text-left transition",
+            t.cardClass,
+            e.overlayClass || "",
+          ].join(" ")}
         >
-          {/* glow wash */}
+          {/* theme glow / rim */}
+          {(t.topGlow || t.rim) && (
+            <div className="pointer-events-none absolute inset-0">
+              {t.topGlow && (
+                <div className="absolute inset-0 opacity-100" style={{ background: t.topGlow }} />
+              )}
+              {t.rim && (
+                <div
+                  className="absolute inset-x-0 top-0 h-[2px] opacity-90"
+                  style={{ background: t.rim }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* small hover lift shine */}
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <div
-              className={`absolute -top-24 left-1/3 h-64 w-64 rounded-full blur-[70px] bg-gradient-to-br ${themeGlow}`}
-            />
+            <div className="absolute -top-24 left-1/3 h-64 w-64 rounded-full bg-white/8 blur-[70px]" />
           </div>
 
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-white/10 bg-black/35 text-xs font-semibold text-white/80">
+              <div
+                className={[
+                  "grid h-9 w-9 shrink-0 place-items-center rounded-2xl border text-xs font-semibold",
+                  theme.startsWith("theme.paper")
+                    ? "border-black/15 bg-black/5 text-black/70"
+                    : "border-white/10 bg-black/35 text-white/80",
+                ].join(" ")}
+              >
                 {initials(author)}
               </div>
 
               <div className="min-w-0">
-                <div className="text-[12px] text-white/70">
-                  <span className="font-semibold text-white/90">{author}</span>
+                <div className={theme.startsWith("theme.paper") ? "text-[15px] text-black/70 font-outfit" : "text-[15px] text-white/70 font-outfit"}>
+                  <span
+                    className={[
+                      "font-semibold",
+                      showGlow
+                        ? g.className
+                        : theme.startsWith("theme.paper")
+                          ? "text-black/90"
+                          : "text-white/90",
+                    ].join(" ")}
+                  >
+                    {author}
+                  </span>
                 </div>
-                <div className="-mt-0.5 text-[11px] text-white/45">
+
+                <div className={theme.startsWith("theme.paper") ? "-mt-0.5 text-[11px] text-black/45" : "-mt-0.5 text-[11px] text-white/45"}>
                   {new Date(rant.createdAt).toLocaleString()}
                 </div>
               </div>
@@ -209,28 +202,47 @@ export default function RantCard({
 
             {/* tiny icon chips */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/35 px-2 py-1 text-[11px] text-white/70">
+              <div
+                className={[
+                  "flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] tabular-nums",
+                  theme.startsWith("theme.paper")
+                    ? "border-black/15 bg-black/5 text-black/70"
+                    : "border-white/10 bg-black/35 text-white/70",
+                ].join(" ")}
+              >
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span className="tabular-nums">{rant.replies?.length || 0}</span>
+                <span>{rant.replies?.length || 0}</span>
               </div>
 
-              <div className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/35 text-white/70">
+              <div
+                className={[
+                  "grid h-8 w-8 place-items-center rounded-full border",
+                  theme.startsWith("theme.paper")
+                    ? "border-black/15 bg-black/5 text-black/70"
+                    : "border-white/10 bg-black/35 text-white/70",
+                ].join(" ")}
+              >
                 <ArrowUpRight className="h-4 w-4" />
               </div>
             </div>
           </div>
 
-          <div className="relative mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
-            {rant.text}
-          </div>
+        <div
+          className={[
+            "relative mt-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed",
+            theme.startsWith("theme.paper") ? "text-black/90" : "text-white/90",
+          ].join(" ")}
+        >
+          {rant.text}
+        </div>
 
           <div className="relative mt-4 flex items-center justify-between gap-3">
             <button
               ref={reactBtnRef}
               type="button"
               onClick={quickReact}
-              onMouseEnter={(e) => {
-                e.stopPropagation();
+              onMouseEnter={(ev) => {
+                ev.stopPropagation();
                 setOpenReason("hover");
                 setHoverBtn(true);
 
@@ -241,25 +253,30 @@ export default function RantCard({
                   if (!trayOpen) openTray();
                 }, 80);
               }}
-              onMouseLeave={(e) => {
-                e.stopPropagation();
+              onMouseLeave={(ev) => {
+                ev.stopPropagation();
                 setHoverBtn(false);
                 if (openT.current) clearTimeout(openT.current);
                 openT.current = null;
               }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
+              onPointerDown={(ev) => ev.stopPropagation()}
+              onPointerUp={(ev) => ev.stopPropagation()}
               {...longPress}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white/85 hover:bg-white/10"
+              className={[
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs hover:opacity-95",
+                theme.startsWith("theme.paper")
+                  ? "border-black/15 bg-black/5 text-black/85 hover:bg-black/10"
+                  : "border-white/10 bg-black/40 text-white/85 hover:bg-white/10",
+              ].join(" ")}
             >
               <span className="text-base leading-none">🫂</span>
-              <span className="text-white/70">React</span>
-              <span className="ml-1 tabular-nums text-white/55">
+              <span className={theme.startsWith("theme.paper") ? "text-black/70" : "text-white/70"}>React</span>
+              <span className={theme.startsWith("theme.paper") ? "ml-1 tabular-nums text-black/55" : "ml-1 tabular-nums text-white/55"}>
                 {(counts.hug || 0) + (counts.lol || 0) + (counts.feel || 0) + (counts.rage || 0)}
               </span>
             </button>
 
-            <div className="text-[11px] text-white/55">
+            <div className={theme.startsWith("theme.paper") ? "text-[11px] text-black/55" : "text-[11px] text-white/55"}>
               🫂 {counts.hug || 0} &nbsp; 😂 {counts.lol || 0} &nbsp; 🥲 {counts.feel || 0} &nbsp; 😤{" "}
               {counts.rage || 0}
             </div>

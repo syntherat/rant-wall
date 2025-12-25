@@ -1,3 +1,4 @@
+// client/src/pages/RantThreadPage.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
@@ -6,14 +7,8 @@ import RantCard from "../components/RantCard";
 import ReplyNode from "../components/thread/ReplyNode";
 import { motion } from "framer-motion";
 
-
 function SkeletonLine({ w = "100%", h = "0.75rem" }) {
-  return (
-    <div
-      className="rounded bg-white/10"
-      style={{ width: w, height: h }}
-    />
-  );
+  return <div className="rounded bg-white/10" style={{ width: w, height: h }} />;
 }
 
 function ThreadCardSkeleton() {
@@ -72,7 +67,6 @@ function ReplySkeleton({ depth = 0 }) {
   );
 }
 
-
 export default function RantThreadPage() {
   const { id } = useParams();
   const { user, refresh } = useSession();
@@ -89,7 +83,7 @@ export default function RantThreadPage() {
     try {
       const res = await api.getRant(id);
       setRant(res.rant);
-    } catch (e) {
+    } catch {
       setErr("Couldn’t load this rant.");
     } finally {
       setLoading(false);
@@ -103,6 +97,7 @@ export default function RantThreadPage() {
   async function react(_, key) {
     const res = await api.reactRant(id, key);
     setRant(res.rant);
+    await refresh();
   }
 
   async function sendReply() {
@@ -118,24 +113,22 @@ export default function RantThreadPage() {
   }
 
   async function replyToReply(parentReplyId, text, mode) {
-    const res = await api.replyToReply(id, parentReplyId, {
-      text,
-      authorMode: mode,
-    });
+    const res = await api.replyToReply(id, parentReplyId, { text, authorMode: mode });
     setRant(res.rant);
     await refresh();
   }
 
-  const theme = user?.cosmetic?.cardTheme || "midnight";
+  const equipped = user?.equipped || {};
+  const theme = equipped.rantTheme || "theme.midnight";
+  const effect = equipped.rantEffect || "effect.none";
+  const nameGlow = equipped.nameGlow || "glow.none";
 
   return (
     <div className="min-h-[calc(100vh-140px)] space-y-6">
-      {/* ── LOADING STATE ───────────────────── */}
       {loading && (
         <>
           <ThreadCardSkeleton />
           <ReplyComposerSkeleton />
-
           <div className="space-y-3">
             <ReplySkeleton />
             <ReplySkeleton />
@@ -144,7 +137,6 @@ export default function RantThreadPage() {
         </>
       )}
 
-      {/* ── ERROR STATE ───────────────────── */}
       {!loading && err && (
         <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
           <div className="text-lg font-semibold">Something went wrong</div>
@@ -158,12 +150,17 @@ export default function RantThreadPage() {
         </div>
       )}
 
-      {/* ── CONTENT ───────────────────── */}
       {!loading && !err && rant && (
         <>
-          <RantCard rant={rant} onReact={react} theme={theme} mode="thread" />
+          <RantCard
+            rant={rant}
+            onReact={react}
+            theme={theme}
+            effect={effect}
+            nameGlow={nameGlow}
+            mode="thread"
+          />
 
-          {/* reply composer */}
           <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 rw-card-shadow">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold">Reply</div>
@@ -197,23 +194,14 @@ export default function RantThreadPage() {
             </div>
           </div>
 
-          {/* replies */}
           <div className="space-y-3">
             <div className="text-sm font-semibold">
-              Replies{" "}
-              <span className="text-white/50">
-                ({rant.replies?.length || 0})
-              </span>
+              Replies <span className="text-white/50">({rant.replies?.length || 0})</span>
             </div>
 
             {rant.replies?.length ? (
               rant.replies.map((rp) => (
-                <ReplyNode
-                  key={rp._id}
-                  node={rp}
-                  user={user}
-                  onReply={replyToReply}
-                />
+                <ReplyNode key={rp._id} node={rp} user={user} onReply={replyToReply} />
               ))
             ) : (
               <div className="rounded-3xl border border-white/10 bg-black/20 p-5 text-sm text-white/55">

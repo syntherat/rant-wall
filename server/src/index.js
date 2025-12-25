@@ -13,6 +13,7 @@ import "./passport.js";
 import authRoutes from "./routes/auth.routes.js";
 import rantRoutes from "./routes/rants.routes.js";
 import meRoutes from "./routes/me.routes.js";
+import storeRoutes from "./routes/store.routes.js";
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.get("/", (req, res) => res.json({ ok: true, name: "Rant Web API" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/rants", rantRoutes);
 app.use("/api/me", meRoutes);
+app.use("/api/store", storeRoutes);
 
 const PORT = process.env.PORT || 8080;
 

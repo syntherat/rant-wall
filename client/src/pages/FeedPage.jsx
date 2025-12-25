@@ -1,3 +1,4 @@
+// client/src/pages/FeedPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
@@ -41,9 +42,7 @@ function ErrorState({ message, onRetry }) {
       <div className="pointer-events-none absolute -right-20 -bottom-16 h-56 w-56 rounded-full bg-orange-500/10 blur-[70px]" />
 
       <div className="relative">
-        <div className="text-lg font-semibold tracking-tight">
-          Couldn’t load rants
-        </div>
+        <div className="text-lg font-semibold tracking-tight">Couldn’t load rants</div>
         <div className="mt-1 text-sm text-white/60">
           {message || "The server didn’t respond. Try again in a moment."}
         </div>
@@ -66,12 +65,8 @@ function EmptyState() {
       <div className="pointer-events-none absolute -right-24 bottom-0 h-56 w-56 rounded-full bg-fuchsia-500/10 blur-[70px]" />
 
       <div className="relative mx-auto max-w-md">
-        <div className="text-xl font-semibold tracking-tight">
-          It’s quiet here… for now.
-        </div>
-        <div className="mt-2 text-sm text-white/60">
-          Be the first to drop a rant on the wall.
-        </div>
+        <div className="text-xl font-semibold tracking-tight">It’s quiet here… for now.</div>
+        <div className="mt-2 text-sm text-white/60">Be the first to drop a rant on the wall.</div>
       </div>
     </div>
   );
@@ -83,12 +78,12 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const theme = user?.cosmetic?.cardTheme || "midnight";
+  const equipped = user?.equipped || {};
+  const theme = equipped.rantTheme || "theme.midnight";
+  const effect = equipped.rantEffect || "effect.none";
+  const nameGlow = equipped.nameGlow || "glow.none";
 
-  const skeletonHeights = useMemo(
-    () => [210, 260, 180, 320, 240, 200, 280, 190, 310],
-    []
-  );
+  const skeletonHeights = useMemo(() => [210, 260, 180, 320, 240, 200, 280, 190, 310], []);
 
   async function load() {
     setErr("");
@@ -109,20 +104,20 @@ export default function FeedPage() {
 
   async function onCreated(rant) {
     setRants((p) => [rant, ...p]);
-    await refresh();
+    await refresh(); // updates VE in navbar
   }
 
   async function react(id, key) {
     try {
       const res = await api.reactRant(id, key);
       setRants((p) => p.map((r) => (r._id === id ? res.rant : r)));
+      await refresh(); // updates VE if server rewarded
     } catch (e) {
       alert(e.message);
     }
   }
 
   return (
-    // ✅ This prevents “footer jumping” when there are 0 cards / error / loading
     <div className="min-h-[calc(100vh-140px)] flex flex-col">
       <div className="space-y-6">
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5">
@@ -138,7 +133,6 @@ export default function FeedPage() {
         <RantComposer onCreated={onCreated} />
       </div>
 
-      {/* ✅ feed area grows to fill space so footer stays stable */}
       <div className="flex-1 pt-6 pb-20">
         {loading ? (
           <div className="rw-masonry columns-1 sm:columns-2 lg:columns-3">
@@ -153,7 +147,14 @@ export default function FeedPage() {
         ) : (
           <div className="rw-masonry columns-1 sm:columns-2 lg:columns-3">
             {rants.map((r) => (
-              <RantCard key={r._id} rant={r} onReact={react} theme={theme} />
+              <RantCard
+                key={r._id}
+                rant={r}
+                onReact={react}
+                theme={theme}
+                effect={effect}
+                nameGlow={nameGlow}
+              />
             ))}
           </div>
         )}
