@@ -1,4 +1,3 @@
-// server/routes/rants.routes.js
 import { Router } from "express";
 import Rant from "../models/Rant.js";
 import User from "../models/User.js";
@@ -48,6 +47,14 @@ router.post("/", async (req, res) => {
     const isAuthed = req.isAuthenticated?.() && req.user;
     const finalMode = isAuthed && authorMode === "public" ? "public" : "anonymous";
 
+    // ✅ snapshot cosmetics AT POST TIME
+    const equipped = isAuthed ? (req.user?.equipped || {}) : {};
+    const cosmetics = {
+      theme: equipped.rantTheme || "theme.midnight",
+      glow: equipped.nameGlow || "glow.none",
+      effect: equipped.rantEffect || "effect.none",
+    };
+
     const rant = await Rant.create({
       text: text.trim(),
       mood,
@@ -59,6 +66,8 @@ router.post("/", async (req, res) => {
       authorUserId: finalMode === "public" ? req.user._id : null,
       authorName: finalMode === "public" ? req.user.username : null,
       anonAlias: finalMode === "anonymous" ? makeAlias() : null,
+
+      cosmetics, // ✅ NEW
     });
 
     // ✅ VE reward for posting (logged in only)
@@ -94,10 +103,7 @@ router.post("/:id/react", async (req, res) => {
     if (!userId && !guestId) return res.status(400).json({ error: "Missing identity" });
 
     // prevent self-farm if logged in and public rant
-    const isSelf =
-      userId &&
-      rant.authorUserId &&
-      String(rant.authorUserId) === String(userId);
+    const isSelf = userId && rant.authorUserId && String(rant.authorUserId) === String(userId);
 
     // record unique reactor per rant
     let created = false;

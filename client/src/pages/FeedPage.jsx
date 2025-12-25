@@ -1,4 +1,3 @@
-// client/src/pages/FeedPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
@@ -78,10 +77,11 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  // viewer equipped (fallback only)
   const equipped = user?.equipped || {};
-  const theme = equipped.rantTheme || "theme.midnight";
-  const effect = equipped.rantEffect || "effect.none";
-  const nameGlow = equipped.nameGlow || "glow.none";
+  const viewerTheme = equipped.rantTheme || "theme.midnight";
+  const viewerEffect = equipped.rantEffect || "effect.none";
+  const viewerGlow = equipped.nameGlow || "glow.none";
 
   const skeletonHeights = useMemo(() => [210, 260, 180, 320, 240, 200, 280, 190, 310], []);
 
@@ -151,9 +151,10 @@ export default function FeedPage() {
                 key={r._id}
                 rant={r}
                 onReact={react}
-                theme={theme}
-                effect={effect}
-                nameGlow={nameGlow}
+                // ✅ AUTHOR cosmetics (with viewer fallback, then defaults)
+                theme={r?.cosmetics?.theme || viewerTheme}
+                effect={r?.cosmetics?.effect || viewerEffect}
+                nameGlow={r?.cosmetics?.glow || viewerGlow}
               />
             ))}
           </div>

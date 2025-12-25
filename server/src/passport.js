@@ -4,6 +4,19 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "./models/User.js";
 
+function ensureEquippedDefaults(user) {
+  if (!user) return user;
+
+  if (!user.equipped) user.equipped = {};
+  if (!user.equipped.rantTheme) user.equipped.rantTheme = "theme.midnight";
+  if (!user.equipped.profileTheme) user.equipped.profileTheme = "profile.midnight";
+  if (!user.equipped.nameGlow) user.equipped.nameGlow = "glow.none";
+  if (!user.equipped.rantEffect) user.equipped.rantEffect = "effect.none";
+
+  return user;
+}
+
+
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
@@ -29,6 +42,9 @@ passport.use(
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return done(null, false, { message: "Invalid credentials" });
+
+        ensureEquippedDefaults(user);
+        await user.save();
 
         return done(null, user);
       } catch (e) {
@@ -70,6 +86,9 @@ passport.use(
           if (!user.googleId) user.googleId = googleId;
           await user.save();
         }
+
+        ensureEquippedDefaults(user);
+        await user.save();
 
         return done(null, user);
       } catch (e) {

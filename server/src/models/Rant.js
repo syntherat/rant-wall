@@ -44,6 +44,13 @@ const RantSchema = new Schema(
     // anonymous author
     anonAlias: { type: String, default: null },
 
+    // ✅ SNAPSHOT cosmetics for THIS rant (so everyone sees same look)
+    cosmetics: {
+      theme: { type: String, default: "theme.midnight" },
+      glow: { type: String, default: "glow.none" },
+      effect: { type: String, default: "effect.none" },
+    },
+
     // reactions count map (your current frontend expects object-like counts)
     reactions: { type: Map, of: Number, default: {} },
 
