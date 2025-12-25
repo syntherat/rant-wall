@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- EXTRAORDINARY DARK UI BASE ---- */
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+  background: #07070b;
+}
+
+/* subtle grain */
+.rw-noise {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+}
+
+/* soft vignette */
+.rw-vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(60% 50% at 50% 30%, rgba(255,255,255,0.07), transparent 60%),
+    radial-gradient(60% 50% at 50% 90%, rgba(0,0,0,0.95), rgba(0,0,0,0.2) 55%, transparent 70%);
+}
+
+/* animated aurora blobs */
+@keyframes rw-float {
+  0% { transform: translate3d(0,0,0) scale(1); }
+  50% { transform: translate3d(12px,-14px,0) scale(1.04); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+
+/* --- messy wall helpers --- */
+.rw-masonry {
+  column-gap: 14px;
+}
+.rw-masonry > * {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+
+/* optional: slightly more “paper” feel on hover */
+.rw-card-shadow {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 18px 50px rgba(0,0,0,0.55);
+}
+
+.rw-masonry > * {
+  break-inside: avoid;
+}
