@@ -24,10 +24,22 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
+const isProd = process.env.NODE_ENV === "production";
+
 // CORS with credentials (cookies)
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,          // set differently in dev vs prod
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN,
+    origin: (origin, cb) => {
+      // allow server-to-server / curl requests (no Origin header)
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -40,18 +52,23 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+
     cookie: {
       httpOnly: true,
-      sameSite: "lax", // for local dev
-      secure: false,   // true on https production
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14d
+      secure: isProd,                 // ✅ true on Render (https)
+      sameSite: isProd ? "none" : "lax", // ✅ cross-site cookie support in prod
+      maxAge: 1000 * 60 * 60 * 24 * 14,
     },
+
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       collectionName: "sessions",
+      // optional but nice:
+      ttl: 14 * 24 * 60 * 60, // seconds
     }),
   })
 );
+
 
 // Passport
 app.use(passport.initialize());
