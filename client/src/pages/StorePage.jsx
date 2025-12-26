@@ -3,10 +3,11 @@ import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import { motion, AnimatePresence } from "framer-motion";
 import RantCard from "../components/RantCard";
-import { X, ShoppingBag, Sparkles, CheckCircle2 } from "lucide-react";
+import { X, ShoppingBag, Sparkles, CheckCircle2, ShieldAlert } from "lucide-react";
 import { themeStyle, glowStyle, effectStyle } from "../lib/cosmetics";
 import ModalPortal from "../components/ui/ModalPortal";
 
+// --- slots (must match backend equipped object keys) ---
 function slotForType(type) {
   if (type === "rantTheme") return "rantTheme";
   if (type === "profileTheme") return "profileTheme";
@@ -14,6 +15,32 @@ function slotForType(type) {
   if (type === "rantEffect") return "rantEffect";
   return null;
 }
+
+const rarityRank = {
+  common: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+};
+
+function humanize(str = "") {
+  return str
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+
+function typeLabel(type) {
+  const map = {
+    rantTheme: "Rant Theme",
+    nameGlow: "Name Glow",
+    rantEffect: "Rant Effect",
+    profileTheme: "Profile Theme",
+  };
+  return map[type] || humanize(type);
+}
+
+
 
 function rarityPill(rarity = "common") {
   const map = {
@@ -25,42 +52,8 @@ function rarityPill(rarity = "common") {
   return map[rarity] || map.common;
 }
 
-function Modal({ open, onClose, children }) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onMouseDown={onClose}
-          />
-          <motion.div
-            className="fixed left-1/2 top-1/2 z-[91] w-[min(960px,92vw)] -translate-x-1/2 -translate-y-1/2"
-            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-          >
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#07070b] p-5">
-              <button
-                onClick={onClose}
-                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10"
-              >
-                <X className="h-4 w-4 text-white/70" />
-              </button>
-              {children}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
 function StoreSection({ title, subtitle, items, renderItem }) {
-  if (!items.length) return null;
+  if (!items?.length) return null;
   return (
     <section className="space-y-3">
       <div className="flex items-end justify-between gap-4">
@@ -77,7 +70,7 @@ function StoreSection({ title, subtitle, items, renderItem }) {
 }
 
 function CosmeticDemo({ it }) {
-  // Each store card shows what it sells.
+  // rant themes
   if (it.type === "rantTheme") {
     const t = themeStyle(it.key);
     return (
@@ -86,16 +79,18 @@ function CosmeticDemo({ it }) {
           <div className="pointer-events-none absolute inset-0" style={{ background: t.topGlow }} />
         )}
         {t.rim && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px]" style={{ background: t.rim }} />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[2px]"
+            style={{ background: t.rim }}
+          />
         )}
         <div className="relative text-xs opacity-85">Theme Preview</div>
-        <div className="relative mt-1 text-[11px] opacity-70">
-          bg + border + vibe changed
-        </div>
+        <div className="relative mt-1 text-[11px] opacity-70">bg + border + vibe changed</div>
       </div>
     );
   }
 
+  // name glows
   if (it.type === "nameGlow") {
     const g = glowStyle(it.key);
     return (
@@ -108,6 +103,7 @@ function CosmeticDemo({ it }) {
     );
   }
 
+  // effects
   if (it.type === "rantEffect") {
     const e = effectStyle(it.key);
     return (
@@ -119,7 +115,7 @@ function CosmeticDemo({ it }) {
     );
   }
 
-  // profileTheme: simple indicator (you can later style your profile background from cosmetics.js)
+  // profile theme (simple demo)
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
       <div className="text-[11px] text-white/55">Profile theme</div>
@@ -128,9 +124,16 @@ function CosmeticDemo({ it }) {
   );
 }
 
-function StoreItemCard({ it, owned, equipped, onPreview, onBuy, onEquip }) {
+function StoreItemCard({
+  it,
+  owned,
+  isEquipped,
+  canAfford,
+  onPreview,
+  onBuy,
+  onEquip,
+}) {
   const slot = slotForType(it.type);
-  const isEquipped = slot ? equipped?.[slot] === it.key : false;
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
@@ -151,12 +154,18 @@ function StoreItemCard({ it, owned, equipped, onPreview, onBuy, onEquip }) {
             </span>
 
             <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[11px] text-white/70">
-              {it.type}
+              {typeLabel(it.type)}
             </span>
 
             <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[11px] text-white/70">
               Cost: {it.priceVE} VE
             </span>
+
+            {isEquipped && (
+              <span className="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-200/80">
+                Equipped
+              </span>
+            )}
           </div>
         </div>
 
@@ -180,9 +189,16 @@ function StoreItemCard({ it, owned, equipped, onPreview, onBuy, onEquip }) {
         {!owned ? (
           <button
             onClick={onBuy}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white px-3 py-2 text-sm font-semibold text-black hover:opacity-95"
+            disabled={!canAfford}
+            className={[
+              "inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold",
+              canAfford
+                ? "border-white/10 bg-white text-black hover:opacity-95"
+                : "border-white/10 bg-white/10 text-white/40 cursor-not-allowed",
+            ].join(" ")}
+            title={!canAfford ? "Not enough Vent Energy" : "Buy"}
           >
-            <ShoppingBag className="h-4 w-4" />
+            {!canAfford ? <ShieldAlert className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
             Buy
           </button>
         ) : slot ? (
@@ -191,7 +207,7 @@ function StoreItemCard({ it, owned, equipped, onPreview, onBuy, onEquip }) {
             className={[
               "inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm",
               isEquipped
-                ? "border-white/10 bg-emerald-500/10 text-emerald-200/90"
+                ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200/90"
                 : "border-white/10 bg-white/5 text-white/90 hover:bg-white/10",
             ].join(" ")}
           >
@@ -213,19 +229,34 @@ export default function StorePage() {
 
   const [preview, setPreview] = useState(null); // store item
 
+  const equipped = inv?.equipped || {};
+  const ve = inv?.ventEnergy ?? user?.ventEnergy ?? 0;
+
   const ownedSet = useMemo(() => {
     const s = new Set();
     (inv?.inventory || []).forEach((x) => s.add(x.itemKey));
     return s;
   }, [inv]);
 
+  const sortedActiveItems = useMemo(() => {
+    return (items || [])
+      .filter((it) => it?.isActive !== false)
+      .slice()
+      .sort((a, b) => {
+        const ra = rarityRank[a?.rarity || "common"] || 1;
+        const rb = rarityRank[b?.rarity || "common"] || 1;
+        if (rb !== ra) return rb - ra; // higher rarity first
+        return (a?.priceVE || 0) - (b?.priceVE || 0); // cheaper first inside same rarity
+      });
+  }, [items]);
+
   const grouped = useMemo(() => {
     const g = { rantTheme: [], nameGlow: [], rantEffect: [], profileTheme: [] };
-    (items || []).forEach((it) => {
+    sortedActiveItems.forEach((it) => {
       if (g[it.type]) g[it.type].push(it);
     });
     return g;
-  }, [items]);
+  }, [sortedActiveItems]);
 
   async function load() {
     setLoading(true);
@@ -256,7 +287,7 @@ export default function StorePage() {
       await refresh();
       await load();
     } catch (e) {
-      alert(e.message);
+      alert(e?.message || "Purchase failed.");
     }
   }
 
@@ -267,13 +298,11 @@ export default function StorePage() {
       await refresh();
       await load();
     } catch (e) {
-      alert(e.message);
+      alert(e?.message || "Equip failed.");
     }
   }
 
-  const equipped = inv?.equipped || {};
-  const ve = inv?.ventEnergy ?? user?.ventEnergy ?? 0;
-
+  // Preview applies temp equipped only for relevant slot
   const previewEquipped = useMemo(() => {
     if (!preview) return null;
     const slot = slotForType(preview.type);
@@ -308,8 +337,15 @@ export default function StorePage() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-right">
-            <div className="text-xs text-white/55">Your VE</div>
-            <div className="text-2xl font-extrabold">VE {ve}</div>
+            <div className="text-sm text-white/55 font-outfit">Your VE</div>
+            <div className="flex items-center gap-2 justify-end">
+              <img
+                src="/VELogo.png"
+                alt="Vent Energy"
+                className="h-7 w-7 opacity-90 drop-shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+              />
+              <div className="text-2xl font-extrabold font-outfit">{ve}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -326,11 +362,11 @@ export default function StorePage() {
             Retry
           </button>
         </div>
-      ) : items.length === 0 ? (
+      ) : sortedActiveItems.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-sm text-white/60">
           <div className="text-lg font-semibold text-white/85">No items yet</div>
           <div className="mt-1 text-white/55">
-            Your store is connected — it just has 0 items in the database.
+            Your store is connected — it just has 0 active items in the database.
           </div>
           <div className="mt-4 text-[12px] text-white/45">
             Seed items once: <span className="text-white/70">npm run seed:store</span>
@@ -342,77 +378,121 @@ export default function StorePage() {
             title="Themes"
             subtitle="Card background + border + vibe."
             items={grouped.rantTheme}
-            renderItem={(it) => (
-              <StoreItemCard
-                key={it.key}
-                it={it}
-                owned={ownedSet.has(it.key)}
-                equipped={equipped}
-                onPreview={() => setPreview(it)}
-                onBuy={() => buy(it.key)}
-                onEquip={equip}
-              />
-            )}
+            renderItem={(it) => {
+              const slot = slotForType(it.type);
+              const isEquipped = slot ? equipped?.[slot] === it.key : false;
+              const owned = ownedSet.has(it.key);
+              const canAfford = ve >= (it.priceVE || 0);
+
+              return (
+                <StoreItemCard
+                  key={it.key}
+                  it={it}
+                  owned={owned}
+                  isEquipped={isEquipped}
+                  canAfford={canAfford}
+                  onPreview={() => setPreview(it)}
+                  onBuy={() => buy(it.key)}
+                  onEquip={equip}
+                />
+              );
+            }}
           />
 
           <StoreSection
             title="Name Glows"
             subtitle="Public usernames only — make it pop."
             items={grouped.nameGlow}
-            renderItem={(it) => (
-              <StoreItemCard
-                key={it.key}
-                it={it}
-                owned={ownedSet.has(it.key)}
-                equipped={equipped}
-                onPreview={() => setPreview(it)}
-                onBuy={() => buy(it.key)}
-                onEquip={equip}
-              />
-            )}
+            renderItem={(it) => {
+              const slot = slotForType(it.type);
+              const isEquipped = slot ? equipped?.[slot] === it.key : false;
+              const owned = ownedSet.has(it.key);
+              const canAfford = ve >= (it.priceVE || 0);
+
+              return (
+                <StoreItemCard
+                  key={it.key}
+                  it={it}
+                  owned={owned}
+                  isEquipped={isEquipped}
+                  canAfford={canAfford}
+                  onPreview={() => setPreview(it)}
+                  onBuy={() => buy(it.key)}
+                  onEquip={equip}
+                />
+              );
+            }}
           />
 
           <StoreSection
             title="Effects"
             subtitle="Texture / motion overlays."
             items={grouped.rantEffect}
-            renderItem={(it) => (
-              <StoreItemCard
-                key={it.key}
-                it={it}
-                owned={ownedSet.has(it.key)}
-                equipped={equipped}
-                onPreview={() => setPreview(it)}
-                onBuy={() => buy(it.key)}
-                onEquip={equip}
-              />
-            )}
+            renderItem={(it) => {
+              const slot = slotForType(it.type);
+              const isEquipped = slot ? equipped?.[slot] === it.key : false;
+              const owned = ownedSet.has(it.key);
+              const canAfford = ve >= (it.priceVE || 0);
+
+              return (
+                <StoreItemCard
+                  key={it.key}
+                  it={it}
+                  owned={owned}
+                  isEquipped={isEquipped}
+                  canAfford={canAfford}
+                  onPreview={() => setPreview(it)}
+                  onBuy={() => buy(it.key)}
+                  onEquip={equip}
+                />
+              );
+            }}
           />
 
           <StoreSection
             title="Profile Themes"
             subtitle="Profile ambience (optional)."
             items={grouped.profileTheme}
-            renderItem={(it) => (
-              <StoreItemCard
-                key={it.key}
-                it={it}
-                owned={ownedSet.has(it.key)}
-                equipped={equipped}
-                onPreview={() => setPreview(it)}
-                onBuy={() => buy(it.key)}
-                onEquip={equip}
-              />
-            )}
+            renderItem={(it) => {
+              const slot = slotForType(it.type);
+              const isEquipped = slot ? equipped?.[slot] === it.key : false;
+              const owned = ownedSet.has(it.key);
+              const canAfford = ve >= (it.priceVE || 0);
+
+              return (
+                <StoreItemCard
+                  key={it.key}
+                  it={it}
+                  owned={owned}
+                  isEquipped={isEquipped}
+                  canAfford={canAfford}
+                  onPreview={() => setPreview(it)}
+                  onBuy={() => buy(it.key)}
+                  onEquip={equip}
+                />
+              );
+            }}
           />
         </div>
       )}
 
       <ModalPortal open={!!preview} onClose={() => setPreview(null)}>
         <div className="space-y-4">
-          <div className="text-lg font-semibold">Preview</div>
-          <div className="text-sm text-white/55">
-            Local preview. Buying saves it. Equipping applies everywhere.
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-lg font-semibold">Preview</div>
+              <div className="text-sm text-white/55">
+                Local preview. Buying saves it. Equipping applies everywhere.
+              </div>
+            </div>
+
+            <button
+              onClick={() => setPreview(null)}
+              className="grid h-9 w-9 place-items-center rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4 text-white/70" />
+            </button>
           </div>
 
           <div className="pt-2">
@@ -439,24 +519,35 @@ export default function StorePage() {
                 {!ownedSet.has(preview.key) ? (
                   <button
                     onClick={() => buy(preview.key)}
-                    className="rounded-2xl border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-black"
+                    disabled={ve < (preview.priceVE || 0)}
+                    className={[
+                      "rounded-2xl border px-4 py-2 text-sm font-semibold",
+                      ve >= (preview.priceVE || 0)
+                        ? "border-white/10 bg-white text-black"
+                        : "border-white/10 bg-white/10 text-white/40 cursor-not-allowed",
+                    ].join(" ")}
+                    title={ve < (preview.priceVE || 0) ? "Not enough Vent Energy" : "Buy"}
                   >
                     Buy for {preview.priceVE} VE
                   </button>
-                ) : (
-                  (() => {
+                ) : (() => {
                     const slot = slotForType(preview.type);
                     if (!slot) return null;
+                    const already = equipped?.[slot] === preview.key;
                     return (
                       <button
                         onClick={() => equip(slot, preview.key)}
-                        className="rounded-2xl border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-black"
+                        className={[
+                          "rounded-2xl border px-4 py-2 text-sm font-semibold",
+                          already
+                            ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200/90"
+                            : "border-white/10 bg-white text-black",
+                        ].join(" ")}
                       >
-                        Equip
+                        {already ? "Equipped" : "Equip"}
                       </button>
                     );
-                  })()
-                )}
+                  })()}
               </>
             )}
           </div>

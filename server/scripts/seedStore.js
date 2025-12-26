@@ -172,6 +172,62 @@ const seedItems = [
     isActive: true,
     data: { preset: "aurora" },
   },
+  // ✅ EXTRA RANT THEMES
+{
+  key: "theme.glacier",
+  name: "Glacier Glass",
+  desc: "Cold cyan haze. Super clean, super icy.",
+  type: "rantTheme",
+  priceVE: 360,
+  rarity: "rare",
+  isActive: true,
+  data: { preset: "glacier" },
+},
+{
+  key: "theme.velvet",
+  name: "Velvet Void",
+  desc: "Soft purple void. Low-key luxury.",
+  type: "rantTheme",
+  priceVE: 800,
+  rarity: "epic",
+  isActive: true,
+  data: { preset: "velvet" },
+},
+
+// ✅ EXTRA NAME GLOWS
+{
+  key: "glow.aurora",
+  name: "Aurora Crown",
+  desc: "Green-cyan-violet crown shimmer.",
+  type: "nameGlow",
+  priceVE: 1800,
+  rarity: "legendary",
+  isActive: true,
+  data: { preset: "aurora" },
+},
+
+// ✅ EXTRA RANT EFFECTS
+{
+  key: "effect.frost",
+  name: "Frost Noise",
+  desc: "Cold haze + noise texture.",
+  type: "rantEffect",
+  priceVE: 520,
+  rarity: "rare",
+  isActive: true,
+  data: { preset: "frost" },
+},
+{
+  key: "effect.embers",
+  name: "Ember Dust",
+  desc: "Subtle warm particles floating.",
+  type: "rantEffect",
+  priceVE: 1000,
+  rarity: "epic",
+  isActive: true,
+  data: { preset: "embers" },
+},
+
 ];
 
 async function main() {
